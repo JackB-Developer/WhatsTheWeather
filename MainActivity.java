@@ -1,12 +1,10 @@
-package com.example.robpercival.whatstheweather;
+package net.itpro2go.whatstheweather;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -26,24 +24,27 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 
-
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
     EditText cityName;
     TextView resultTextView;
 
-    public void findWeather(View view) {
+    public void findWeather (View view) {
 
-        Log.i("cityName", cityName.getText().toString());
+        Log.i("cityName" , cityName.getText().toString());
 
+        //===========Hide the keyboard when the button has been pressed===========//
         InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         mgr.hideSoftInputFromWindow(cityName.getWindowToken(), 0);
 
+        //============If a city has spaces in it's name====================//
         try {
+
             String encodedCityName = URLEncoder.encode(cityName.getText().toString(), "UTF-8");
 
+            //view-source:http://api.openweathermap.org/data/2.5/weather?q=Casselberry,us&appid=abe6bc7ab8516c6b518789ce9ad4210b
             DownloadTask task = new DownloadTask();
-            task.execute("http://api.openweathermap.org/data/2.5/weather?q=" + encodedCityName);
+            task.execute("http://api.openweathermap.org/data/2.5/weather?q=" + encodedCityName + "&appid=abe6bc7ab8516c6b518789ce9ad4210b");
 
 
         } catch (UnsupportedEncodingException e) {
@@ -55,23 +56,21 @@ public class MainActivity extends Activity {
         }
 
 
+        }
 
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-
         cityName = (EditText) findViewById(R.id.cityName);
-        resultTextView = (TextView) findViewById(R.id.resultTextView);
-
+        resultTextView = (TextView) findViewById(R.id.resultsTextView);
     }
 
-
+    //==========DOWNLOAD CONTENT FROM WEBSITE IN THE BACKGROUND==============//
     public class DownloadTask extends AsyncTask<String, Void, String> {
+
 
         @Override
         protected String doInBackground(String... urls) {
@@ -85,9 +84,9 @@ public class MainActivity extends Activity {
 
                 urlConnection = (HttpURLConnection) url.openConnection();
 
-                InputStream in = urlConnection.getInputStream();
+                InputStream inputStream = urlConnection.getInputStream();
 
-                InputStreamReader reader = new InputStreamReader(in);
+                InputStreamReader reader = new InputStreamReader(inputStream);
 
                 int data = reader.read();
 
@@ -102,16 +101,17 @@ public class MainActivity extends Activity {
                 }
 
                 return result;
-
             } catch (Exception e) {
 
-                Toast.makeText(getApplicationContext(), "Could not find weather", Toast.LENGTH_LONG);
-
+                e.printStackTrace();
+                //Toast.makeText(getApplicationContext(), "Could not find weather", Toast.LENGTH_LONG);
             }
 
-            return null;
+            return  null;
+
         }
 
+        //========CALLED WHEN DO IN BACKGROUND HAS COMPLETED AND PASSES RESULTS===========//
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
@@ -120,15 +120,18 @@ public class MainActivity extends Activity {
 
                 String message = "";
 
+                //========CONVERT STRING INTO JSON OBJECT, GENERAL PURPOSE SCRIPT=========//
                 JSONObject jsonObject = new JSONObject(result);
 
+                //========This extracts just this data "weather" from the JSON object====//
                 String weatherInfo = jsonObject.getString("weather");
 
-                Log.i("Weather content", weatherInfo);
+                Log.i("Weather Content", weatherInfo);
 
+                //==========LOOP THROUGH MINI JSON WITH JSON ARRAY
                 JSONArray arr = new JSONArray(weatherInfo);
 
-                for (int i = 0; i < arr.length(); i++) {
+                for (int i=0; i < arr.length(); i++) {
 
                     JSONObject jsonPart = arr.getJSONObject(i);
 
@@ -154,39 +157,16 @@ public class MainActivity extends Activity {
 
                     Toast.makeText(getApplicationContext(), "Could not find weather", Toast.LENGTH_LONG);
 
-                }
+                    //Log.i("main", jsonPart.getString("main"));
+                    //Log.i("description", jsonPart.getString("description"));
 
+                }
 
             } catch (JSONException e) {
 
                 Toast.makeText(getApplicationContext(), "Could not find weather", Toast.LENGTH_LONG);
-
             }
 
-
-
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 }
